@@ -1,0 +1,49 @@
+services:
+    nginx:
+        # используем последний стабильный образ nginx
+        image: nginx:latest
+        # слева указан порт который займет nginx в локальной ОС, справа указан дефолтный порт на котором nginx работает в контейнере
+        ports:
+            - "8000:80"
+        # монтируем директории, слева директории на основной машине, справа - куда они монтируются в контейнере
+        volumes:
+            - ./hosts:/etc/nginx/conf.d
+            - ./www:/var/www
+            - ./logs:/var/log/nginx
+        # образ nginx будет общаться с php
+        links:
+            - php
+    php:
+        image: php:8.2.0-fpm
+        links:
+            - mysql
+        # монтируем директории, слева директории на основной машине, справа - куда они монтируются в контейнере
+        volumes:
+            - ./www:/var/www
+        build:
+            dockerfile: Dockerfile
+    mysql:
+        # образ mysql из dockerhub-хранилища
+        image: mysql:latest
+        # слева указан порт который займет mysql в локальной ОС, справа указан дефолтный порт на котором mysql работает в контейнере
+        ports:
+            - "3306:3306"
+        # задаем пароль для root пользователя
+        environment:
+            MYSQL_ROOT_PASSWORD: secret
+    pma:
+        # используем последний стабильный образ phpmyadmin
+        image: phpmyadmin/phpmyadmin
+        # сообщаем контейнеру о перезапуске, если система перезагружается
+        restart: always
+        # образ phpmyadmin будет общаться с mysql
+        links:
+            - mysql:mysql
+        # слева указан порт который займет pma в локальной ОС, справа указан дефолтный порт на котором pma работает в контейнере    
+        ports:
+            - 8183:80
+        # прописываем название нашего MySQL хоста, логин и пароль    
+        environment:
+            PMA_HOST: mysql
+            MYSQL_USERNAME: root
+            MYSQL_ROOT_PASSWORD: secret
